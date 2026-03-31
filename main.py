@@ -1,3 +1,4 @@
+# (your imports remain same)
 import tkinter as tk
 from tkinter import messagebox, ttk
 from file_system import FileSystem
@@ -8,7 +9,6 @@ import time
 # ---------------- SYSTEM INIT ----------------
 fs = FileSystem()
 
-# Reset disk (avoid full disk issue)
 fs.bitmap = [0] * 10
 fs.files = {}
 
@@ -20,10 +20,13 @@ BLUE = "#3b82f6"
 HOVER = "#2563eb"
 GREY = "#334155"
 
+# ---------------- NEW FEATURE VARIABLES ----------------
+selected_file = None
+
 # ---------------- PLACEHOLDER ENTRY ----------------
 class PlaceholderEntry(tk.Entry):
     def __init__(self, master, placeholder, is_password=False):
-        super().__init__(master, bg="white")  # light background
+        super().__init__(master, bg="white")
 
         self.placeholder = placeholder
         self.is_password = is_password
@@ -37,7 +40,7 @@ class PlaceholderEntry(tk.Entry):
     def clear(self, e):
         if self.get() == self.placeholder:
             self.delete(0, tk.END)
-            self.config(fg="black")  # ✅ typed text is black
+            self.config(fg="black")
             if self.is_password:
                 self.config(show="*")
 
@@ -84,6 +87,16 @@ def update_file_list():
     for name, blocks in fs.get_files().items():
         file_list.insert(tk.END, f"{name} → {blocks}")
 
+# ---------------- SELECT FILE ----------------
+def on_select(event):
+    global selected_file
+    try:
+        index = file_list.curselection()[0]
+        selected_file = list(fs.get_files().keys())[index]
+        status.set(f"Selected: {selected_file}")
+    except:
+        pass
+
 # ---------------- STATS ----------------
 def update_stats():
     total = len(fs.bitmap)
@@ -120,12 +133,40 @@ def create_file():
 
 # ---------------- DELETE FILE ----------------
 def delete_file():
-    name = entry_name.get()
-    result = fs.delete_file(name)
+    global selected_file
 
+    name = selected_file if selected_file else entry_name.get()
+
+    result = fs.delete_file(name)
     status.set(result)
+
     update_disk_view()
     update_file_list()
+
+# ---------------- WRITE FILE ----------------
+def write_file():
+    if not selected_file:
+        messagebox.showerror("Error", "Select file first")
+        return
+
+    content = content_entry.get()
+    result = fs.write_file(selected_file, content)
+    status.set(result)
+
+# ---------------- READ FILE ----------------
+def read_file():
+    if not selected_file:
+        messagebox.showerror("Error", "Select file first")
+        return
+
+    data = fs.read_file(selected_file)
+    status.set(f"Content: {data}")
+
+# ---------------- ACCESS TIME ----------------
+def show_access_time():
+    opt = Optimizer(fs.bitmap)
+    time_val = opt.access_time()
+    status.set(f"Access Time: {time_val} ms")
 
 # ---------------- CRASH ----------------
 def crash_system():
@@ -167,7 +208,7 @@ def login():
 
 # ---------------- MAIN UI ----------------
 def build_ui():
-    global entry_name, entry_size, file_list, disk_frame, stats_label, status, progress
+    global entry_name, entry_size, content_entry, file_list, disk_frame, stats_label, status, progress
 
     root.configure(bg=BG)
 
@@ -188,8 +229,14 @@ def build_ui():
     entry_size = PlaceholderEntry(left, "Enter file size...")
     entry_size.pack(pady=8)
 
+    content_entry = PlaceholderEntry(left, "Enter file content...")
+    content_entry.pack(pady=8)
+
     ModernButton(left, "Create File", create_file).pack(pady=5)
     ModernButton(left, "Delete File", delete_file).pack(pady=5)
+    ModernButton(left, "Write File", write_file).pack(pady=5)
+    ModernButton(left, "Read File", read_file).pack(pady=5)
+    ModernButton(left, "Access Time", show_access_time).pack(pady=5)
     ModernButton(left, "Crash System", crash_system).pack(pady=5)
     ModernButton(left, "Recover Files", recover_files).pack(pady=5)
     ModernButton(left, "Defragment", defragment_disk).pack(pady=5)
@@ -214,6 +261,8 @@ def build_ui():
     file_list = tk.Listbox(right, width=30)
     file_list.pack()
 
+    file_list.bind("<<ListboxSelect>>", on_select)
+
     # STATUS BAR
     status = tk.StringVar()
     tk.Label(root, textvariable=status,
@@ -224,7 +273,7 @@ def build_ui():
 
 # ---------------- LOGIN UI ----------------
 root = tk.Tk()
-root.geometry("900x550")
+root.geometry("900x600")
 root.configure(bg=BG)
 
 login_frame = tk.Frame(root, bg=BG)
@@ -239,5 +288,12 @@ pwd.pack(pady=5)
 tk.Button(login_frame, text="Login",
           bg=BLUE, fg="white",
           command=login).pack(pady=10)
+
+# -------- ADD THIS --------
+def on_close():
+    fs.reset_bitmap()
+    root.destroy()
+
+root.protocol("WM_DELETE_WINDOW", on_close)
 
 root.mainloop()
