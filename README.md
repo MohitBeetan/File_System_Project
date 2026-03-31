@@ -1,99 +1,114 @@
 # File_System_Project
 A File System Recovery and Optimization Tool that simulates disk management, recovers lost data, and improves file storage efficiency.
-# 📂 File System Recovery and Optimization Tool
+# 📂 File_System_Project
 
-## 🧠 Project Overview
+### File System Recovery and Optimization Tool
 
-This project is a **File System Simulator** developed using Python. It demonstrates core Operating System concepts such as file allocation, free space management, crash recovery, and disk optimization.
-
-The system simulates how an actual operating system manages files on a disk using a **bitmap-based allocation method** and provides a graphical interface for interaction.
+A Python-based File System Simulator that demonstrates core Operating System concepts such as file allocation, free space management, crash recovery, and disk optimization using a realistic and modular approach.
 
 ---
 
-## 🎯 Objectives
+# 🧠 Project Overview
 
-* To simulate file storage using disk blocks
-* To implement **free space management using bitmap**
-* To demonstrate **file creation and deletion**
-* To simulate **system crash and recovery**
-* To implement **disk optimization (defragmentation)**
-* To provide a **user-friendly GUI interface**
+This project simulates how an operating system manages files on a disk using a **bitmap-based allocation technique**. It includes advanced features like **crash simulation, recovery mechanisms, and disk optimization (defragmentation)**.
+
+The system is designed with a modular structure and persistent storage using JSON files, making it both educational and practical.
 
 ---
 
-## 🛠️ Technologies Used
+# 🎯 Objectives
 
-* **Python 3**
-* **Tkinter (GUI Library)**
-* JSON (for persistent storage)
+* Simulate file storage using disk blocks
+* Implement free space management using bitmap
+* Demonstrate file creation and deletion
+* Simulate system crash and recovery
+* Implement disk optimization (defragmentation)
+* Provide a user-friendly GUI interface
 
 ---
 
-## ⚙️ Features
+# 🛠️ Technologies Used
 
-### ✅ File Management
+* Python 3
+* Tkinter (GUI Library)
+* JSON (Persistent Storage)
+
+---
+
+# ⚙️ Features
+
+## ✅ File Management
 
 * Create files with a given name and size
 * Delete existing files
 * Prevent duplicate file names
 
-### 💿 Disk Simulation
+## 💿 Disk Simulation
 
-* Disk is represented using blocks
-* Each block can be either:
+* Disk represented using fixed-size blocks
+* Each block can be:
 
   * 🟩 Occupied
   * ⬜ Free
 
-### 📊 Bitmap Free Space Management
+## 📊 Bitmap Free Space Management
 
-* Uses a bitmap where:
+* Uses bitmap representation:
 
-  * `1` = occupied block
-  * `0` = free block
+  * `1` = occupied
+  * `0` = free
 
-### 💥 Crash Simulation
+## 💥 Crash Simulation
 
-* Simulates system crash by deleting file metadata
+* Simulates system crash by removing file metadata
 * Disk data remains intact
 
-### 🔄 Recovery System
+## 🔄 Recovery System
 
-* Recovers files based on occupied blocks after crash
+* Recovers files using stored disk/block data
+* Ensures data consistency after crash
 
-### ⚡ Disk Optimization
+## ⚡ Disk Optimization (Defragmentation)
 
-* Defragmentation combines scattered blocks
-* Improves file access efficiency
+* Rearranges scattered blocks
+* Improves storage efficiency and access speed
 
-### 🖥️ GUI Interface
+## 🖥️ GUI Interface
 
 * Built using Tkinter
-* Easy-to-use buttons and visual disk blocks
-* Displays file allocation and system output
+* Interactive buttons and disk visualization
+* Displays real-time system operations
+
+## 💾 Persistent Storage
+
+* `bitmap.json` → Tracks block usage
+* `disk.txt` → Simulated disk storage
+* `storage.json` → Stores file metadata (NEW)
 
 ---
 
-## 📁 Project Structure
+# 📁 Project Structure
 
 ```
-file_system_project/
+File_System_Project/
 │
-├── main.py              # GUI and main program
-├── file_system.py       # File system logic
-├── recovery.py          # Recovery mechanism
-├── optimizer.py         # Defragmentation logic
-├── bitmap.json          # Stores block usage
-└── disk.txt             # Simulated disk
+├── main.py              # GUI and main controller
+├── file_system.py       # Core file system logic
+├── recovery.py          # Crash recovery logic
+├── optimizer.py         # Disk optimization logic
+├── bitmap.json          # Block allocation map
+├── disk.txt             # Simulated disk data
+├── storage.json         # File metadata storage
+└── README.md            # Project documentation
 ```
 
 ---
 
-## ▶️ How to Run
+# ▶️ How to Run
 
 1. Open project folder in VS Code
 2. Open terminal
-3. Run the command:
+3. Run:
 
 ```
 python main.py
@@ -101,59 +116,60 @@ python main.py
 
 ---
 
-## 🧪 How to Use
+# 🧪 How to Use
 
 1. Enter file name and size
-2. Click **Create** to store file
-3. Click **Delete** to remove file
-4. Click **Crash** to simulate system failure
-5. Click **Recover** to restore lost files
-6. Click **Defragment** to optimize disk
+2. Click **Create** → store file
+3. Click **Delete** → remove file
+4. Click **Crash** → simulate system failure
+5. Click **Recover** → restore files
+6. Click **Defragment** → optimize disk
 
 ---
 
-## 🧠 Key Concepts Covered
+# 🧠 Key Concepts Covered
 
-* File Allocation Methods
+* File Allocation Techniques
 * Bitmap Free Space Management
 * Disk Fragmentation
 * Defragmentation
 * Crash Recovery Mechanism
+* Persistent Storage Handling
 
 ---
 
-## 📌 Example
+# 📌 Example
 
 ```
-file1 → [0,1,2]
+file1 → [0,1,2]  
 file2 → [3,4]
 ```
-
-This means:
 
 * file1 occupies blocks 0,1,2
 * file2 occupies blocks 3,4
 
 ---
 
-## 🚀 Future Enhancements
+# 🚀 Future Enhancements
 
 * Directory (folder) structure
 * File read/write functionality
 * Disk usage statistics
-* Animation for defragmentation
-* Advanced UI design
+* Animated defragmentation
+* Advanced UI/UX improvements
 
 ---
 
-## 👨‍💻 Authors
+# 👨‍💻 Authors
 
-Mohit Beetan, Prasanjit Majumder, Soumya Prerit
+* Mohit Beetan
+* Prasanjit Majumder
+* Soumya Prerit
 
 ---
 
-## 📖 Conclusion
+# 📖 Conclusion
 
-This project provides a simplified but effective understanding of how operating systems manage files, recover from crashes, and optimize storage. It bridges theoretical OS concepts with practical implementation.
+This project provides a practical understanding of how operating systems manage storage, recover from failures, and optimize disk usage. It effectively bridges theoretical OS concepts with real-world implementation using Python.
 
 ---
