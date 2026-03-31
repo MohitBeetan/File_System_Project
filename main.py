@@ -1,33 +1,109 @@
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox, ttk
 from file_system import FileSystem
 from recovery import Recovery
 from optimizer import Optimizer
+import time
 
+# ---------------- SYSTEM INIT ----------------
 fs = FileSystem()
 
-# -------- FUNCTIONS -------- #
+# Reset disk (avoid full disk issue)
+fs.bitmap = [0] * 10
+fs.files = {}
 
+# ---------------- THEME ----------------
+BG = "#0f172a"
+CARD = "#1e293b"
+TEXT = "#e2e8f0"
+BLUE = "#3b82f6"
+HOVER = "#2563eb"
+GREY = "#334155"
+
+# ---------------- PLACEHOLDER ENTRY ----------------
+class PlaceholderEntry(tk.Entry):
+    def __init__(self, master, placeholder, is_password=False):
+        super().__init__(master, bg="white")  # light background
+
+        self.placeholder = placeholder
+        self.is_password = is_password
+
+        self.insert(0, placeholder)
+        self.config(fg="grey")
+
+        self.bind("<FocusIn>", self.clear)
+        self.bind("<FocusOut>", self.add)
+
+    def clear(self, e):
+        if self.get() == self.placeholder:
+            self.delete(0, tk.END)
+            self.config(fg="black")  # ✅ typed text is black
+            if self.is_password:
+                self.config(show="*")
+
+    def add(self, e):
+        if not self.get():
+            self.config(show="")
+            self.insert(0, self.placeholder)
+            self.config(fg="grey")
+
+# ---------------- MODERN BUTTON ----------------
+class ModernButton(tk.Canvas):
+    def __init__(self, parent, text, command):
+        super().__init__(parent, width=170, height=40,
+                         bg=CARD, highlightthickness=0)
+
+        self.command = command
+
+        self.rect = self.create_rectangle(5, 5, 165, 35,
+                                          fill=BLUE, outline=BLUE)
+        self.text = self.create_text(85, 20, text=text,
+                                    fill="white",
+                                    font=("Segoe UI", 10, "bold"))
+
+        self.bind("<Button-1>", lambda e: self.command())
+        self.bind("<Enter>", lambda e: self.itemconfig(self.rect, fill=HOVER))
+        self.bind("<Leave>", lambda e: self.itemconfig(self.rect, fill=BLUE))
+
+# ---------------- DISK VIEW ----------------
 def update_disk_view():
     for widget in disk_frame.winfo_children():
         widget.destroy()
 
     for i, block in enumerate(fs.bitmap):
-        color = "green" if block == 1 else "white"
-        lbl = tk.Label(disk_frame, text=str(i), bg=color, width=4, height=2, relief="solid")
-        lbl.grid(row=0, column=i, padx=2)
+        color = BLUE if block == 1 else GREY
+        tk.Label(disk_frame, text=str(i),
+                 bg=color, fg="white",
+                 width=4, height=2).grid(row=0, column=i, padx=3)
 
+    update_stats()
+
+# ---------------- FILE LIST ----------------
 def update_file_list():
     file_list.delete(0, tk.END)
     for name, blocks in fs.get_files().items():
         file_list.insert(tk.END, f"{name} → {blocks}")
 
+# ---------------- STATS ----------------
+def update_stats():
+    total = len(fs.bitmap)
+    used = sum(fs.bitmap)
+    percent = int((used / total) * 100)
+
+    stats_label.config(text=f"Disk Usage: {percent}%")
+    progress["value"] = percent
+
+# ---------------- CREATE FILE ----------------
 def create_file():
     name = entry_name.get()
     size = entry_size.get()
 
-    if not name or not size:
-        messagebox.showerror("Error", "Enter all fields")
+    if name == "Enter file name..." or size == "Enter file size...":
+        messagebox.showerror("Error", "Enter valid input")
+        return
+
+    if sum(fs.bitmap) == len(fs.bitmap):
+        messagebox.showerror("Error", "Disk is full")
         return
 
     try:
@@ -37,93 +113,131 @@ def create_file():
         return
 
     result = fs.create_file(name, size)
-    output.set(result)
+    status.set(result)
 
     update_disk_view()
     update_file_list()
 
+# ---------------- DELETE FILE ----------------
 def delete_file():
     name = entry_name.get()
-
-    if not name:
-        messagebox.showerror("Error", "Enter file name")
-        return
-
     result = fs.delete_file(name)
-    output.set(result)
 
+    status.set(result)
     update_disk_view()
     update_file_list()
 
-def show_bitmap():
-    output.set(f"Bitmap: {fs.show_bitmap()}")
-
+# ---------------- CRASH ----------------
 def crash_system():
-    result = fs.crash()
-    output.set(result)
+    status.set(fs.crash())
     update_file_list()
 
+# ---------------- RECOVERY ----------------
 def recover_files():
     rec = Recovery(fs.bitmap)
-    result = rec.recover_files()
-    output.set(f"Recovered: {result}")
+    recovered = rec.recover_files()
 
+    fs.files = {}
+    for i, blocks in enumerate(recovered):
+        fs.files[f"recovered_{i}"] = blocks
+
+    status.set(f"Recovered {len(recovered)} files")
+    update_file_list()
+
+# ---------------- DEFRAGMENT ----------------
 def defragment_disk():
     opt = Optimizer(fs.bitmap)
-    fs.bitmap = opt.defragment()
-    output.set("Disk Defragmented")
+    new_bitmap = opt.defragment()
+
+    for i in range(len(new_bitmap)):
+        fs.bitmap[i] = new_bitmap[i]
+        update_disk_view()
+        root.update()
+        time.sleep(0.1)
+
+    status.set("Disk optimized")
+
+# ---------------- LOGIN ----------------
+def login():
+    if user.get() == "admin" and pwd.get() == "1234":
+        login_frame.destroy()
+        build_ui()
+    else:
+        messagebox.showerror("Error", "Invalid credentials")
+
+# ---------------- MAIN UI ----------------
+def build_ui():
+    global entry_name, entry_size, file_list, disk_frame, stats_label, status, progress
+
+    root.configure(bg=BG)
+
+    tk.Label(root, text="💾 File System Dashboard",
+             bg=BG, fg=TEXT,
+             font=("Segoe UI", 18, "bold")).pack(pady=10)
+
+    main = tk.Frame(root, bg=BG)
+    main.pack(fill="both", expand=True)
+
+    # LEFT PANEL
+    left = tk.Frame(main, bg=CARD, padx=10, pady=10)
+    left.pack(side="left", fill="y", padx=10)
+
+    entry_name = PlaceholderEntry(left, "Enter file name...")
+    entry_name.pack(pady=8)
+
+    entry_size = PlaceholderEntry(left, "Enter file size...")
+    entry_size.pack(pady=8)
+
+    ModernButton(left, "Create File", create_file).pack(pady=5)
+    ModernButton(left, "Delete File", delete_file).pack(pady=5)
+    ModernButton(left, "Crash System", crash_system).pack(pady=5)
+    ModernButton(left, "Recover Files", recover_files).pack(pady=5)
+    ModernButton(left, "Defragment", defragment_disk).pack(pady=5)
+
+    # CENTER PANEL
+    center = tk.Frame(main, bg=CARD)
+    center.pack(side="left", expand=True, fill="both")
+
+    disk_frame = tk.Frame(center, bg=CARD)
+    disk_frame.pack(pady=20)
+
+    progress = ttk.Progressbar(center, length=300)
+    progress.pack()
+
+    stats_label = tk.Label(center, bg=CARD, fg="white")
+    stats_label.pack()
+
+    # RIGHT PANEL
+    right = tk.Frame(main, bg=CARD)
+    right.pack(side="right", fill="y", padx=10)
+
+    file_list = tk.Listbox(right, width=30)
+    file_list.pack()
+
+    # STATUS BAR
+    status = tk.StringVar()
+    tk.Label(root, textvariable=status,
+             bg="#020617", fg="white").pack(fill="x")
 
     update_disk_view()
+    update_file_list()
 
-# -------- GUI -------- #
-
+# ---------------- LOGIN UI ----------------
 root = tk.Tk()
-root.title("File System Recovery Tool")
-root.geometry("700x500")
-root.configure(bg="#1e1e1e")
+root.geometry("900x550")
+root.configure(bg=BG)
 
-# Title
-tk.Label(root, text="File System Simulator", font=("Arial", 18, "bold"),
-         fg="white", bg="#1e1e1e").pack(pady=10)
+login_frame = tk.Frame(root, bg=BG)
+login_frame.pack(expand=True)
 
-# Input Frame
-input_frame = tk.Frame(root, bg="#1e1e1e")
-input_frame.pack()
+user = PlaceholderEntry(login_frame, "Username")
+user.pack(pady=5)
 
-tk.Label(input_frame, text="File Name", fg="white", bg="#1e1e1e").grid(row=0, column=0)
-entry_name = tk.Entry(input_frame)
-entry_name.grid(row=0, column=1, padx=10)
+pwd = PlaceholderEntry(login_frame, "Password", is_password=True)
+pwd.pack(pady=5)
 
-tk.Label(input_frame, text="Size", fg="white", bg="#1e1e1e").grid(row=1, column=0)
-entry_size = tk.Entry(input_frame)
-entry_size.grid(row=1, column=1, padx=10)
-
-# Buttons
-btn_frame = tk.Frame(root, bg="#1e1e1e")
-btn_frame.pack(pady=10)
-
-tk.Button(btn_frame, text="Create", command=create_file, bg="#4CAF50", width=12).grid(row=0, column=0, padx=5)
-tk.Button(btn_frame, text="Delete", command=delete_file, bg="#f44336", width=12).grid(row=0, column=1, padx=5)
-tk.Button(btn_frame, text="Crash", command=crash_system, width=12).grid(row=0, column=2, padx=5)
-tk.Button(btn_frame, text="Recover", command=recover_files, width=12).grid(row=0, column=3, padx=5)
-tk.Button(btn_frame, text="Defragment", command=defragment_disk, width=12).grid(row=0, column=4, padx=5)
-
-# Disk View
-tk.Label(root, text="Disk Blocks", fg="white", bg="#1e1e1e").pack()
-disk_frame = tk.Frame(root, bg="#1e1e1e")
-disk_frame.pack(pady=10)
-
-# File List
-tk.Label(root, text="Files", fg="white", bg="#1e1e1e").pack()
-file_list = tk.Listbox(root, width=50)
-file_list.pack(pady=5)
-
-# Output
-output = tk.StringVar()
-tk.Label(root, textvariable=output, fg="yellow", bg="#1e1e1e").pack(pady=10)
-
-# Initialize
-update_disk_view()
-update_file_list()
+tk.Button(login_frame, text="Login",
+          bg=BLUE, fg="white",
+          command=login).pack(pady=10)
 
 root.mainloop()
